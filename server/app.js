@@ -22,7 +22,7 @@ const upload = multer({ dest: path.join(__dirname, 'uploads') });
 /**
  * Load environment variables from .env file, where API keys and passwords are configured.
  */
-dotenv.config({ path: '.env' });
+dotenv.config({ path: '.env.example' });
 
 /**
  * Set config values
@@ -99,14 +99,14 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(flash());
-// app.use((req, res, next) => {
-//   if (req.path === '/api/upload') {
-//     // Multer multipart/form-data handling needs to occur before the Lusca CSRF check.
-//     next();
-//   } else {
-//     lusca.csrf()(req, res, next);
-//   }
-// });
+app.use((req, res, next) => {
+  if (req.path === '/api/upload') {
+    // Multer multipart/form-data handling needs to occur before the Lusca CSRF check.
+    next();
+  } else {
+    lusca.csrf()(req, res, next);
+  }
+});
 app.use(lusca.xframe('SAMEORIGIN'));
 app.use(lusca.xssProtection(true));
 app.disable('x-powered-by');

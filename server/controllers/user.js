@@ -6,7 +6,6 @@ const _ = require('lodash');
 const validator = require('validator');
 const mailChecker = require('mailchecker');
 const User = require('../models/User');
-const ApiError = require("../api/ApiError");
 
 const randomBytesAsync = promisify(crypto.randomBytes);
 
@@ -122,30 +121,20 @@ exports.getSignup = (req, res) => {
  * Create a new local account.
  */
 exports.postSignup = async (req, res, next) => {
-  console.log(1, '(1)')
-  const existingUser1 = await User.findOne({ email: req.body.email });
-  console.log(existingUser1, '(existingUser1)')
-
-  // const user = new User({
-  //   email: req.body.email,
-  //   password: req.body.password
-  // });
-  // await user.save();
-
   const validationErrors = [];
   if (!validator.isEmail(req.body.email)) validationErrors.push({ msg: 'Please enter a valid email address.' });
   if (!validator.isLength(req.body.password, { min: 8 })) validationErrors.push({ msg: 'Password must be at least 8 characters long' });
   if (validator.escape(req.body.password) !== validator.escape(req.body.confirmPassword)) validationErrors.push({ msg: 'Passwords do not match' });
   if (validationErrors.length) {
     req.flash('errors', validationErrors);
-    return res.json(ApiError.badRequest(validationErrors[0].msg));
+    return res.redirect('/signup');
   }
   req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
   try {
     const existingUser = await User.findOne({ email: req.body.email });
     if (existingUser) {
-      // req.flash('errors', { msg: 'Account with that email address already exists.' });
-      return res.json(ApiError.badRequest('Account with that email address already exists.'));
+      req.flash('errors', { msg: 'Account with that email address already exists.' });
+      return res.redirect('/signup');
     }
     const user = new User({
       email: req.body.email,
@@ -156,7 +145,7 @@ exports.postSignup = async (req, res, next) => {
       if (err) {
         return next(err);
       }
-      return res.json(ApiError.success('Good'))
+      res.redirect('/');
     });
   } catch (err) {
     next(err);
